@@ -212,18 +212,6 @@ On task approval:
 
 ---
 
-## 🏆 Why This Wins
-
-| Criteria   | Strength                            |
-| ---------- | ----------------------------------- |
-| Innovation | AI that **acts**, not just analyzes |
-| UX         | Confetti + live feedback            |
-| Technical  | Full working workflow               |
-| Impact     | Prevents ambassador drop-off        |
-| Demo       | Smooth 90-sec flow                  |
-
----
-
 ## 📈 Future Scope
 
 * WhatsApp/SMS notifications
