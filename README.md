@@ -13,6 +13,7 @@
 ## ⚡ JUDGE QUICK TEST (Under 2 Minutes)
 
 🔗 **Live Demo:** *(https://campusconnectai.pythonanywhere.com/login)*
+🎬 Video Link https://drive.google.com/file/d/1azt-fs9M2Ry019qkVM-IOpfrEBrjyJxA/view?usp=drivesdk
 
 **Credentials:**
 
@@ -207,30 +208,12 @@ python app.py
 👉 Open: `http://localhost:5000`
 
 ---
-
-## 🌐 Deployment (PythonAnywhere)
-
-1. Upload repo
-2. Set WSGI file:
-
-```python
-from app import create_app
-application = create_app()
-```
-
-3. Set virtualenv:
-
-```
-/home/yourusername/.virtualenvs/your-env
-```
-
-4. Reload web app
-
+``
 ---
 
 ## 🎥 Demo Video
 
-*(Add your 2-minute demo link here)*
+*https://drive.google.com/file/d/1azt-fs9M2Ry019qkVM-IOpfrEBrjyJxA/view?usp=drivesdk*
 
 ---
 
