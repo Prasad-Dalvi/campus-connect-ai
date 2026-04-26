@@ -13,7 +13,7 @@
 ## ⚡ JUDGE QUICK TEST (Under 2 Minutes)
 
 🔗 **Live Demo:** *(https://campusconnectai.pythonanywhere.com/login)*
-🎬 Video Link https://drive.google.com/file/d/1azt-fs9M2Ry019qkVM-IOpfrEBrjyJxA/view?usp=drivesdk
+🎬 Video Link https://drive.google.com/file/d/1yeTYt-Y0HKKmn77reFnzW81_trDLlUtH/view?usp=drivesdk
 
 **Credentials:**
 
@@ -21,7 +21,17 @@
 Admin: admin@demo.com / admin123
 Ambassador: bob@demo.com / ambassador123
 ```
+## 🚀 Local Setup
 
+```bash
+git clone https://github.com/Prasad-Dalvi/campus-connect-ai.git
+cd campus-connect-ai
+
+pip install -r requirements.txt
+python app.py
+```
+
+👉 Open: `http://localhost:5000`
 ### 🎬 Demo Flow:
 
 1. Login as **Admin**
@@ -192,28 +202,13 @@ On task approval:
 * 25 Tasks
 * 200+ Activities
 * 28 At-Risk detected
-
----
-
-## 🚀 Local Setup
-
-```bash
-git clone https://github.com/Prasad-Dalvi/campus-connect-ai.git
-cd campus-connect-ai
-
-pip install -r requirements.txt
-python app.py
-```
-
-👉 Open: `http://localhost:5000`
-
 ---
 ``
 ---
 
 ## 🎥 Demo Video
 
-*https://drive.google.com/file/d/1azt-fs9M2Ry019qkVM-IOpfrEBrjyJxA/view?usp=drivesdk*
+*https://drive.google.com/file/d/1yeTYt-Y0HKKmn77reFnzW81_trDLlUtH/view?usp=drivesdk*
 
 ---
 
