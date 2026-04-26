@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Submissions — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Pending Submissions</h1>
+    <p class="page-sub">Review and approve ambassador task proofs</p>
+  </div>
+</div>
+
+{% if submissions %}
+<div class="submissions-grid">
+  {% for sub in submissions %}
+  <div class="submission-card" id="subcard-{{ sub.id }}">
+    <div class="subcard-header">
+      <div class="amb-cell">
+        <div class="amb-avatar">{{ sub.ambassador.name[0] }}</div>
+        <div>
+          <span class="amb-name">{{ sub.ambassador.name }}</span>
+          <span class="college-tag ms-2">{{ sub.ambassador.college }}</span>
+        </div>
+      </div>
+      <span class="sub-time">{{ sub.submitted_at.strftime('%b %d, %H:%M') }}</span>
+    </div>
+
+    <div class="subcard-body">
+      <p class="sub-task-title">{{ sub.assignment.task.title }}</p>
+      <p class="sub-task-pts">{{ sub.assignment.task.points }} pts</p>
+
+      {% if sub.proof_url %}
+      <a href="{{ sub.proof_url }}" target="_blank" class="proof-link">
+        <i class="bi bi-link-45deg"></i> {{ sub.proof_url[:50] }}…
+      </a>
+      {% endif %}
+      {% if sub.proof_text %}
+      <p class="proof-text-display">{{ sub.proof_text }}</p>
+      {% endif %}
+
+      <div class="ai-verify-bar">
+        <i class="bi bi-cpu-fill" style="color:#6366f1"></i>
+        <span>AI Verification: <strong>{{ (sub.ai_confidence * 100)|int }}%</strong> confidence</span>
+        <span class="ai-verdict verified">✅ Auto-verified</span>
+      </div>
+    </div>
+
+    <div class="subcard-footer">
+      <a href="{{ url_for('admin.ambassador_detail', amb_id=sub.ambassador_id) }}" class="btn-view">
+        <i class="bi bi-person"></i> Profile
+      </a>
+      <button class="btn-approve" onclick="quickApprove({{ sub.id }})">
+        <i class="bi bi-check-lg"></i> Approve
+      </button>
+      <button class="btn-reject" onclick="quickReject({{ sub.id }})">
+        <i class="bi bi-x-lg"></i> Reject
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-page-state">
+  <i class="bi bi-inbox" style="font-size:3rem;color:#475569"></i>
+  <p>No pending submissions right now.</p>
+  <a href="{{ url_for('admin.dashboard') }}" class="btn-cc-primary mt-2">Back to Dashboard</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function quickApprove(subId) {
+  const res = await axios.post(`/admin/api/approve/${subId}`);
+  if (res.data.success) {
+    confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+    document.getElementById(`subcard-${subId}`).style.opacity = '0';
+    setTimeout(() => document.getElementById(`subcard-${subId}`).remove(), 400);
+  }
+}
+async function quickReject(subId) {
+  const c = await Swal.fire({ title:'Reject?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444' });
+  if (c.isConfirmed) {
+    await axios.post(`/admin/api/reject/${subId}`);
+    document.getElementById(`subcard-${subId}`).style.opacity = '0.3';
+  }
+}
+</script>
+{% endblock %}

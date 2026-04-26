@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment variables
+.env
+
+# Flask
+instance/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Mac/Linux temp
+*.swp
+*.swo
+
+# Node (if any CDN fallback used locally)
+node_modules/
+
+# Coverage / testing
+.coverage
+htmlcov/
+
+# Misc
+*.bak
+*.tmp

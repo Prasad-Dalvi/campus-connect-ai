@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block title %}{{ amb.name }} — Risk Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{{ url_for('admin.dashboard') }}" class="btn-back">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h1 class="page-title">{{ amb.name }}</h1>
+      <p class="page-sub">{{ amb.college }} · Joined {{ amb.joined_at.strftime('%b %Y') }}</p>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="risk-badge-large risk-{{ amb.risk_label() }}">
+      {{ amb.risk_badge() }} Risk Score: {{ risk_score }}/100
+    </span>
+    <span class="status-pill status-{{ amb.status }}">{{ amb.status.replace('_',' ').title() }}</span>
+  </div>
+</div>
+
+<div class="detail-grid">
+
+  <!-- ── LEFT COLUMN ──────────────────────────────────────────────────── -->
+  <div class="detail-left">
+
+    <!-- Risk Breakdown Card (Explainable AI) -->
+    <div class="card-cc risk-breakdown-card">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-cpu-fill me-2" style="color:#6366f1"></i>AI Risk Analysis</h3>
+        <span class="ai-label">Explainable AI</span>
+      </div>
+
+      <!-- Risk meter -->
+      <div class="risk-meter-wrap">
+        <div class="risk-meter-track">
+          <div class="risk-meter-fill risk-{{ amb.risk_label() }}" id="riskMeter" style="width:0%" data-target="{{ risk_score }}"></div>
+        </div>
+        <div class="risk-meter-labels">
+          <span>0</span><span>Safe</span><span>Warning</span><span>Critical</span><span>100</span>
+        </div>
+      </div>
+
+      <!-- Why at risk -->
+      <div class="why-section">
+        <p class="why-title">WHY AT RISK — Score Breakdown</p>
+        <div class="reason-list" id="reasonList">
+          {% for r in reasons %}
+          <div class="reason-row" data-score="{{ r.score }}" style="opacity:0;transform:translateX(-20px)">
+            <span class="reason-icon">{{ r.icon }}</span>
+            <span class="reason-factor">{{ r.factor }}</span>
+            <div class="reason-bar-wrap">
+              <div class="reason-bar" style="width:0%" data-target="{{ (r.score / 100 * 100)|int }}%"></div>
+            </div>
+            <span class="reason-score">+{{ r.score }}</span>
+          </div>
+          {% endfor %}
+          <div class="reason-total">
+            <span>TOTAL RISK SCORE</span>
+            <span class="total-score risk-{{ amb.risk_label() }}">= {{ risk_score }}/100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Activity -->
+      <div class="activity-section">
+        <p class="why-title">WEEKLY ACTIVITY</p>
+        <div class="weekly-grid">
+          {% set days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+          {% for i in range(7) %}
+            {% set active = weekly[i].active if i < weekly|length else false %}
+            <div class="day-cell {{ 'active' if active else 'inactive' }}" title="{{ days[i] }}">
+              <span class="day-icon">{{ '✓' if active else '✗' }}</span>
+              <span class="day-label">{{ days[i] }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Trend chart -->
+      <div class="mt-3">
+        <p class="why-title">ACTIVITY TREND</p>
+        <canvas id="trendChart" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- Profile Stats -->
+    <div class="card-cc">
+      <div class="card-header-cc"><h3><i class="bi bi-person-badge-fill me-2"></i>Profile</h3></div>
+      <div class="profile-stats">
+        <div class="pstat"><span class="pstat-val">{{ amb.points }}</span><span class="pstat-lbl">Points</span></div>
+        <div class="pstat"><span class="pstat-val">#{{ amb.rank }}</span><span class="pstat-lbl">Rank</span></div>
+        <div class="pstat"><span class="pstat-val">{{ (amb.completion_rate * 100)|int }}%</span><span class="pstat-lbl">Completion</span></div>
+        <div class="pstat"><span class="pstat-val">{{ amb.inactive_days }}d</span><span class="pstat-lbl">Inactive</span></div>
+      </div>
+
+      <!-- Portfolio Score -->
+      <div class="portfolio-section mt-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="why-title">PORTFOLIO SCORE</span>
+          <span class="total-score">{{ amb.portfolio_score }}/100</span>
+        </div>
+        <div class="portfolio-bar-wrap">
+          <div class="portfolio-bar" style="width:{{ amb.portfolio_score }}%"></div>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div class="skills-section mt-3">
+        <p class="why-title">SKILLS</p>
+        <div class="skills-wrap">
+          {% for skill in (amb.skills or '').split(',') %}
+            {% if skill.strip() %}
+            <span class="skill-chip">{{ skill.strip() }}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p class="recruiter-tip">
+          <i class="bi bi-lightbulb-fill" style="color:#f59e0b"></i>
+          {% if (amb.skills or '').split(',')|length < 4 %}
+            Add {{ 4 - (amb.skills or '').split(',')|length }} more skills to reach recruiter highlight status.
+          {% else %}
+            Great skills profile! Keep completing tasks to maintain your edge.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── RIGHT COLUMN ─────────────────────────────────────────────────── -->
+  <div class="detail-right">
+
+    <!-- AI Intervention Engine (THE MAIN HOOK) -->
+    <div class="card-cc intervention-card" id="interventionCard">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-robot me-2" style="color:#6366f1"></i>AI Intervention Engine</h3>
+        <span class="ai-label">Auto-Pilot</span>
+      </div>
+
+      <div class="intervention-body" id="interventionBody">
+        <p class="intervention-desc">
+          Our AI has analysed {{ amb.name.split()[0] }}'s behaviour patterns and prepared
+          <strong>3 targeted actions</strong> to re-engage them immediately.
+        </p>
+
+        <div class="action-list">
+          <div class="action-item" id="action1">
+            <div class="action-check"><i class="bi bi-check-lg"></i></div>
+            <div class="action-info">
+              <span class="action-title">📋 Assign Quick Task</span>
+              <span class="action-desc">Create a simple 50-pt task to restart momentum</span>
+            </div>
+            <span class="action-status pending">Queued</span>
+          </div>
+          <div class="action-item" id="action2">
+            <div class="action-check"><i class="bi bi-check-lg"></i></div>
+            <div class="action-info">
+              <span class="action-title">💬 Send Motivation Message</span>
+              <span class="action-desc">Personalised AI message based on {{ amb.name.split()[0] }}'s profile</span>
+            </div>
+            <span class="action-status pending">Queued</span>
+          </div>
+          <div class="action-item" id="action3">
+            <div class="action-check"><i class="bi bi-check-lg"></i></div>
+            <div class="action-info">
+              <span class="action-title">🎁 Activate Bonus Points</span>
+              <span class="action-desc">25 instant bonus points to re-ignite motivation</span>
+            </div>
+            <span class="action-status pending">Queued</span>
+          </div>
+        </div>
+
+        <button class="btn-execute w-100 mt-4" id="executeBtn" onclick="executeInterventions()">
+          <span class="execute-icon">🚀</span>
+          <span id="executeBtnText">Execute All Interventions</span>
+        </button>
+      </div>
+
+      <!-- Post-intervention state -->
+      <div class="intervention-success" id="interventionSuccess" style="display:none">
+        <div class="success-icon-wrap"><i class="bi bi-check-circle-fill"></i></div>
+        <h4>Intervention Active!</h4>
+        <p>All 3 actions executed successfully. {{ amb.name.split()[0] }} has been re-engaged.</p>
+        <div class="success-actions" id="successActions"></div>
+      </div>
+    </div>
+
+    <!-- Pending Submissions -->
+    {% if submissions %}
+    <div class="card-cc">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-inbox-fill me-2"></i>Submissions</h3>
+        <span class="badge-pill">{{ submissions|length }}</span>
+      </div>
+
+      {% for sub in submissions %}
+      <div class="submission-row" id="sub-{{ sub.id }}">
+        <div class="sub-info">
+          <span class="sub-task">{{ sub.assignment.task.title }}</span>
+          <span class="sub-time">{{ sub.submitted_at.strftime('%b %d, %H:%M') }}</span>
+          {% if sub.proof_url %}
+            <a href="{{ sub.proof_url }}" target="_blank" class="sub-proof">
+              <i class="bi bi-link-45deg"></i> View Proof
+            </a>
+          {% endif %}
+          {% if sub.proof_text %}
+            <p class="sub-text">{{ sub.proof_text[:120] }}…</p>
+          {% endif %}
+        </div>
+
+        {% if sub.status == 'pending' %}
+        <div class="sub-ai">
+          <span class="ai-confidence">
+            <i class="bi bi-cpu"></i> AI: {{ (sub.ai_confidence * 100)|int }}% confident
+          </span>
+          <span class="ai-verdict verified">✅ Likely Verified</span>
+        </div>
+        <div class="sub-actions">
+          <button class="btn-approve" onclick="approveSubmission({{ sub.id }})">
+            <i class="bi bi-check-lg"></i> Approve
+          </button>
+          <button class="btn-reject" onclick="rejectSubmission({{ sub.id }})">
+            <i class="bi bi-x-lg"></i> Reject
+          </button>
+        </div>
+        {% else %}
+        <span class="sub-badge {{ sub.status }}">{{ sub.status.title() }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Task Assignments -->
+    <div class="card-cc">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-list-task me-2"></i>Assigned Tasks</h3>
+      </div>
+      {% if assignments %}
+        {% for ta in assignments %}
+        <div class="task-row">
+          <div class="task-status-dot {{ ta.status }}"></div>
+          <div class="task-info">
+            <span class="task-title">{{ ta.task.title }}</span>
+            <span class="task-meta">{{ ta.task.points }} pts · {{ ta.status.title() }}{% if ta.auto_assigned %} · <span class="auto-badge">🤖 Auto</span>{% endif %}</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-state">No tasks assigned yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const AMB_ID = {{ amb.id }};
+
+// ── Animate risk meter ─────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const meter = document.getElementById('riskMeter');
+    meter.style.transition = 'width 1.2s ease';
+    meter.style.width = meter.dataset.target + '%';
+  }, 300);
+
+  // Animate reason rows
+  document.querySelectorAll('.reason-row').forEach((row, i) => {
+    setTimeout(() => {
+      row.style.transition = 'all 0.4s ease';
+      row.style.opacity    = '1';
+      row.style.transform  = 'translateX(0)';
+      setTimeout(() => {
+        const bar = row.querySelector('.reason-bar');
+        bar.style.transition = 'width 0.8s ease';
+        bar.style.width = bar.dataset.target;
+      }, 100);
+    }, 500 + i * 150);
+  });
+});
+
+// ── Trend chart ────────────────────────────────────────────────────────
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: {{ trend_labels | tojson }},
+    datasets: [{
+      label: 'Activity %',
+      data: {{ trend_data | tojson }},
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239,68,68,0.1)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#ef4444',
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { beginAtZero: false, grid: { color: 'rgba(255,255,255,0.05)' } }
+    }
+  }
+});
+
+// ── Execute interventions ──────────────────────────────────────────────
+async function executeInterventions() {
+  const btn = document.getElementById('executeBtn');
+  btn.disabled = true;
+  document.getElementById('executeBtnText').textContent = 'Executing…';
+  btn.style.opacity = '0.7';
+
+  // Staggered action animations
+  const actions = ['action1','action2','action3'];
+  for (let i = 0; i < actions.length; i++) {
+    await new Promise(r => setTimeout(r, 500 + i * 400));
+    const row = document.getElementById(actions[i]);
+    row.classList.add('executing');
+    row.querySelector('.action-status').textContent = '⚡ Executing…';
+    row.querySelector('.action-status').className = 'action-status executing';
+  }
+
+  try {
+    const res = await axios.post(`/admin/api/intervene/${AMB_ID}`);
+    if (res.data.success) {
+      await new Promise(r => setTimeout(r, 600));
+
+      // Mark all done
+      actions.forEach(id => {
+        const row = document.getElementById(id);
+        row.classList.remove('executing');
+        row.classList.add('done');
+        row.querySelector('.action-status').textContent = '✅ Done';
+        row.querySelector('.action-status').className = 'action-status done';
+      });
+
+      await new Promise(r => setTimeout(r, 400));
+
+      // Show success state
+      document.getElementById('interventionBody').style.display = 'none';
+      const success = document.getElementById('interventionSuccess');
+      success.style.display = 'flex';
+
+      // Populate executed actions
+      const actionsHtml = res.data.actions.map(a =>
+        `<div class="executed-action"><span>${a.icon}</span><span>${a.text}</span></div>`
+      ).join('');
+      document.getElementById('successActions').innerHTML = actionsHtml;
+
+      // Update status badge
+      document.querySelector('.status-pill').textContent = 'Intervention Active';
+      document.querySelector('.status-pill').className   = 'status-pill status-intervention';
+
+    }
+  } catch (e) {
+    Swal.fire({ icon:'error', title:'Error', text:'Intervention failed.', confirmButtonColor:'#6366f1' });
+    btn.disabled = false;
+    document.getElementById('executeBtnText').textContent = 'Execute All Interventions';
+    btn.style.opacity = '1';
+  }
+}
+
+// ── Approve submission + confetti ──────────────────────────────────────
+async function approveSubmission(subId) {
+  const res = await axios.post(`/admin/api/approve/${subId}`);
+  if (!res.data.success) return;
+
+  const d = res.data;
+
+  // Hide submission row
+  document.getElementById(`sub-${subId}`).style.display = 'none';
+
+  // 🎉 CONFETTI
+  confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 }, colors: ['#6366f1','#10b981','#f59e0b','#fff'] });
+  setTimeout(() => confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } }), 300);
+  setTimeout(() => confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } }), 500);
+
+  // Animate stat changes with SweetAlert
+  await Swal.fire({
+    title: '🎉 Submission Approved!',
+    html: `
+      <div style="font-family:'DM Sans',sans-serif;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+          <div style="background:rgba(99,102,241,0.1);border-radius:12px;padding:16px;text-align:center;">
+            <div style="color:#94a3b8;font-size:12px;margin-bottom:4px">POINTS</div>
+            <div style="font-size:24px;font-weight:800;color:#6366f1">${d.old_points} → <span style="color:#10b981">${d.new_points}</span></div>
+          </div>
+          <div style="background:rgba(239,68,68,0.1);border-radius:12px;padding:16px;text-align:center;">
+            <div style="color:#94a3b8;font-size:12px;margin-bottom:4px">RISK SCORE</div>
+            <div style="font-size:24px;font-weight:800;color:#ef4444">${d.old_risk} → <span style="color:#10b981">${d.new_risk}</span></div>
+          </div>
+          <div style="background:rgba(245,158,11,0.1);border-radius:12px;padding:16px;text-align:center;">
+            <div style="color:#94a3b8;font-size:12px;margin-bottom:4px">RANK</div>
+            <div style="font-size:24px;font-weight:800;color:#f59e0b">#${d.old_rank} → <span style="color:#10b981">#${d.new_rank}</span></div>
+          </div>
+          <div style="background:rgba(16,185,129,0.1);border-radius:12px;padding:16px;text-align:center;">
+            <div style="color:#94a3b8;font-size:12px;margin-bottom:4px">STATUS</div>
+            <div style="font-size:24px;font-weight:800;">${d.status}</div>
+          </div>
+        </div>
+      </div>
+    `,
+    confirmButtonColor: '#6366f1',
+    confirmButtonText:  'Awesome! 🚀',
+    background: '#1e293b',
+    color: '#f8fafc',
+  });
+}
+
+async function rejectSubmission(subId) {
+  const conf = await Swal.fire({ title:'Reject submission?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444', confirmButtonText:'Reject' });
+  if (!conf.isConfirmed) return;
+  await axios.post(`/admin/api/reject/${subId}`);
+  document.getElementById(`sub-${subId}`).style.opacity = '0.4';
+  document.getElementById(`sub-${subId}`).querySelector('.sub-actions').innerHTML = '<span class="sub-badge rejected">Rejected</span>';
+}
+</script>
+{% endblock %}

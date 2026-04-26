@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Submit Proof — {{ assignment.task.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{{ url_for('ambassador.dashboard') }}" class="btn-back"><i class="bi bi-arrow-left"></i></a>
+    <div>
+      <h1 class="page-title">{{ assignment.task.title }}</h1>
+      <p class="page-sub">Submit your proof to earn <strong>{{ assignment.task.points }} points</strong></p>
+    </div>
+  </div>
+  <span class="pts-chip" style="font-size:1.1rem">+{{ assignment.task.points }} pts</span>
+</div>
+
+<div class="submit-grid">
+
+  <!-- Task Info -->
+  <div class="card-cc">
+    <div class="card-header-cc"><h3><i class="bi bi-info-circle-fill me-2"></i>Task Details</h3></div>
+    <div class="p-4">
+      <p class="task-description-full">{{ assignment.task.description or 'Complete this task and submit your proof below.' }}</p>
+      {% if assignment.task.deadline %}
+      <div class="deadline-chip">
+        <i class="bi bi-clock-fill"></i>
+        Due: {{ assignment.task.deadline.strftime('%B %d, %Y') }}
+      </div>
+      {% endif %}
+      {% if assignment.auto_assigned %}
+      <div class="auto-note mt-3">
+        <i class="bi bi-robot"></i>
+        This task was <strong>auto-assigned</strong> by the AI Intervention Engine to help you get back on track!
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Submission Form -->
+  <div class="card-cc">
+    <div class="card-header-cc"><h3><i class="bi bi-upload me-2"></i>Submit Proof</h3></div>
+    <div class="p-4">
+      <form method="POST" action="{{ url_for('ambassador.task_detail', assignment_id=assignment.id) }}" id="submitForm">
+
+        <div class="mb-4">
+          <label class="form-label-cc">Proof URL <span class="text-muted">(Instagram, LinkedIn, Drive link, etc.)</span></label>
+          <div class="input-wrap">
+            <i class="bi bi-link-45deg input-icon"></i>
+            <input type="url" name="proof_url" class="form-control-cc" placeholder="https://www.instagram.com/p/…"/>
+          </div>
+        </div>
+
+        <div class="divider-or"><span>OR</span></div>
+
+        <div class="mb-4">
+          <label class="form-label-cc">Description / Note</label>
+          <textarea name="proof_text" class="form-control-cc" rows="4" placeholder="Describe what you did, paste your post caption, or add any relevant context…"></textarea>
+        </div>
+
+        <!-- AI mock preview -->
+        <div class="ai-preview-box" id="aiPreview" style="display:none">
+          <div class="ai-preview-header">
+            <i class="bi bi-cpu-fill" style="color:#6366f1"></i>
+            <strong>AI Pre-verification</strong>
+            <span class="ai-badge-live">● LIVE</span>
+          </div>
+          <div class="ai-preview-body">
+            <div class="ai-confidence-bar-wrap">
+              <div class="ai-confidence-bar" id="aiBar" style="width:0%"></div>
+            </div>
+            <span id="aiConfText">Analysing…</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-cc-primary w-100 mt-3" id="submitBtn">
+          <i class="bi bi-send-fill me-2"></i>Submit for Review
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show AI preview when user types
+const urlInput  = document.querySelector('[name=proof_url]');
+const textInput = document.querySelector('[name=proof_text]');
+let aiTimer;
+
+function showAiPreview() {
+  const preview = document.getElementById('aiPreview');
+  const bar     = document.getElementById('aiBar');
+  const conf    = document.getElementById('aiConfText');
+
+  if (!urlInput.value && !textInput.value) { preview.style.display='none'; return; }
+
+  preview.style.display = 'block';
+  conf.textContent = 'Analysing submission…';
+  bar.style.width  = '0%';
+
+  clearTimeout(aiTimer);
+  aiTimer = setTimeout(() => {
+    const pct = Math.floor(Math.random() * 15 + 82); // 82–96%
+    bar.style.transition = 'width 1s ease';
+    bar.style.width = pct + '%';
+    conf.innerHTML = `<strong style="color:#10b981">✅ ${pct}% confident</strong> — Likely to be approved`;
+  }, 1000);
+}
+
+urlInput.addEventListener('input', showAiPreview);
+textInput.addEventListener('input', showAiPreview);
+
+// Submit animation
+document.getElementById('submitForm').addEventListener('submit', () => {
+  const btn = document.getElementById('submitBtn');
+  btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting…';
+  btn.disabled  = true;
+});
+</script>
+{% endblock %}

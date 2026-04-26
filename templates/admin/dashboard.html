@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Ambassador Intelligence</h1>
+    <p class="page-sub">Real-time overview of your ambassador network</p>
+  </div>
+  <button class="btn-cc-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+    <i class="bi bi-plus-lg"></i> New Task
+  </button>
+</div>
+
+<!-- ── AI Alert Banner ──────────────────────────────────────────────────── -->
+{% if at_risk|length > 0 %}
+<div class="ai-alert-banner" id="aiAlertBanner">
+  <div class="alert-pulse"></div>
+  <div class="alert-content">
+    <span class="alert-icon">⚠️</span>
+    <div>
+      <strong>{{ at_risk|length }} ambassador{% if at_risk|length != 1 %}s{% endif %} need immediate action</strong>
+      <span class="alert-sub"> — AI detected critical engagement drop-offs</span>
+    </div>
+  </div>
+  <button class="btn-alert-action" onclick="scrollToAtRisk()">
+    View At-Risk <i class="bi bi-arrow-right"></i>
+  </button>
+  <button class="btn-close-alert" onclick="document.getElementById('aiAlertBanner').style.display='none'">
+    <i class="bi bi-x"></i>
+  </button>
+</div>
+{% endif %}
+
+<!-- ── KPI Cards ────────────────────────────────────────────────────────── -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(99,102,241,0.12);color:#6366f1">
+      <i class="bi bi-people-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num" data-count="{{ total }}">0</span>
+      <span class="kpi-label">Total Ambassadors</span>
+    </div>
+    <div class="kpi-trend up">+8% <i class="bi bi-arrow-up-short"></i></div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(16,185,129,0.12);color:#10b981">
+      <i class="bi bi-lightning-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num" data-count="{{ engagement_pct }}">0</span>
+      <span class="kpi-label">Engagement Rate %</span>
+    </div>
+    <div class="kpi-trend up">+3% <i class="bi bi-arrow-up-short"></i></div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(239,68,68,0.12);color:#ef4444">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num" data-count="{{ at_risk|length }}">0</span>
+      <span class="kpi-label">At-Risk</span>
+    </div>
+    <div class="kpi-trend down">Needs action <i class="bi bi-arrow-down-short"></i></div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">
+      <i class="bi bi-patch-check-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num" data-count="{{ tasks|length }}">0</span>
+      <span class="kpi-label">Active Tasks</span>
+    </div>
+    <div class="kpi-trend up">Running <i class="bi bi-dot"></i></div>
+  </div>
+</div>
+
+<!-- ── Main Grid ─────────────────────────────────────────────────────────── -->
+<div class="dashboard-grid">
+
+  <!-- Ambassador Table -->
+  <div class="card-cc col-span-2">
+    <div class="card-header-cc">
+      <h3><i class="bi bi-table me-2"></i>Ambassador Network</h3>
+      <div class="header-actions">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search ambassadors…" oninput="filterTable()"/>
+        <select id="riskFilter" class="filter-select" onchange="filterTable()">
+          <option value="">All</option>
+          <option value="danger">🔴 High Risk</option>
+          <option value="warning">🟡 Medium</option>
+          <option value="safe">🟢 Safe</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table-cc" id="ambassadorTable">
+        <thead>
+          <tr>
+            <th>Ambassador</th>
+            <th>College</th>
+            <th>Risk Score</th>
+            <th>Points</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="at-risk-anchor">
+          {% for a in ambassadors %}
+          <tr class="amb-row risk-{{ a.risk_label() }}" data-risk="{{ a.risk_label() }}" data-name="{{ a.name|lower }}" data-college="{{ a.college|lower }}">
+            <td>
+              <div class="amb-cell">
+                <div class="amb-avatar">{{ a.name[0] }}</div>
+                <div>
+                  <span class="amb-name">{{ a.name }}</span>
+                  {% if a.status == 'intervention' %}
+                    <span class="badge-tiny intervention">⚡ Intervention</span>
+                  {% endif %}
+                </div>
+              </div>
+            </td>
+            <td><span class="college-tag">{{ a.college }}</span></td>
+            <td>
+              <div class="risk-cell">
+                <div class="risk-bar-wrap">
+                  <div class="risk-bar risk-{{ a.risk_label() }}" style="width:{{ a.risk_score }}%"></div>
+                </div>
+                <span class="risk-num risk-{{ a.risk_label() }}">{{ a.risk_score }}</span>
+              </div>
+            </td>
+            <td><span class="points-val">{{ a.points }} pts</span></td>
+            <td>
+              <span class="status-dot {{ a.risk_label() }}">{{ a.risk_badge() }}</span>
+            </td>
+            <td>
+              <a href="{{ url_for('admin.ambassador_detail', amb_id=a.id) }}" class="btn-view">
+                <i class="bi bi-eye-fill"></i> View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="card-cc">
+    <div class="card-header-cc">
+      <h3><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>Leaderboard</h3>
+      <span class="live-dot">● LIVE</span>
+    </div>
+    <div id="leaderboardList">
+      {% for a in leaderboard %}
+      <div class="lb-row" id="lb-{{ a.id }}">
+        <span class="lb-rank {% if loop.index <= 3 %}top-{{ loop.index }}{% endif %}">#{{ loop.index }}</span>
+        <div class="lb-avatar">{{ a.name[0] }}</div>
+        <div class="lb-info">
+          <span class="lb-name">{{ a.name }}</span>
+          <span class="lb-college">{{ a.college }}</span>
+        </div>
+        <span class="lb-pts">{{ a.points }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Mini Analytics ──────────────────────────────────────────────────── -->
+<div class="analytics-row">
+  <div class="card-cc">
+    <div class="card-header-cc"><h3><i class="bi bi-graph-up me-2"></i>Engagement Trend</h3></div>
+    <canvas id="engagementChart" height="160"></canvas>
+  </div>
+  <div class="card-cc">
+    <div class="card-header-cc"><h3><i class="bi bi-pie-chart-fill me-2"></i>Risk Distribution</h3></div>
+    <canvas id="riskChart" height="160"></canvas>
+  </div>
+  <div class="card-cc" id="mapCard">
+    <div class="card-header-cc"><h3><i class="bi bi-map-fill me-2"></i>Campus Map</h3></div>
+    <div id="ambassadorMap" style="height:200px;border-radius:12px;overflow:hidden"></div>
+  </div>
+</div>
+
+<!-- ── Create Task Modal ────────────────────────────────────────────────── -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-cc">
+      <div class="modal-header-cc">
+        <h5><i class="bi bi-plus-circle-fill me-2"></i>Create New Task</h5>
+        <button type="button" class="btn-close-cc" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="mb-3">
+          <label class="form-label-cc">Task Title *</label>
+          <input type="text" id="taskTitle" class="form-control-cc" placeholder="e.g. Share Campus Story"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-cc">Description</label>
+          <textarea id="taskDesc" class="form-control-cc" rows="3" placeholder="Task details…"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-cc">Points</label>
+          <input type="number" id="taskPoints" class="form-control-cc" value="50" min="10" max="200"/>
+        </div>
+      </div>
+      <div class="modal-footer-cc">
+        <button class="btn-cc-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn-cc-primary" onclick="createTask()">
+          <i class="bi bi-plus-lg me-1"></i>Create Task
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Counter animation ──────────────────────────────────────────────────
+document.querySelectorAll('[data-count]').forEach(el => {
+  const target = +el.dataset.count;
+  let curr = 0;
+  const step = Math.ceil(target / 40);
+  const iv = setInterval(() => {
+    curr = Math.min(curr + step, target);
+    el.textContent = curr + (el.closest('.kpi-card').querySelector('.kpi-label').textContent.includes('%') ? '%' : '');
+    if (curr >= target) clearInterval(iv);
+  }, 30);
+});
+
+// ── Filter table ───────────────────────────────────────────────────────
+function filterTable() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const risk = document.getElementById('riskFilter').value;
+  document.querySelectorAll('.amb-row').forEach(row => {
+    const nameMatch    = row.dataset.name.includes(q) || row.dataset.college.includes(q);
+    const riskMap      = { 'danger':'danger', 'warning':'warning', 'success':'safe' };
+    const riskMatch    = !risk || riskMap[row.dataset.risk] === risk || (risk === 'safe' && row.dataset.risk === 'success');
+    row.style.display  = nameMatch && riskMatch ? '' : 'none';
+  });
+}
+
+// ── Scroll to at-risk ──────────────────────────────────────────────────
+function scrollToAtRisk() {
+  document.getElementById('at-risk-anchor').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('riskFilter').value = 'danger';
+  filterTable();
+}
+
+// ── Create task ────────────────────────────────────────────────────────
+async function createTask() {
+  const title  = document.getElementById('taskTitle').value.trim();
+  const desc   = document.getElementById('taskDesc').value.trim();
+  const points = document.getElementById('taskPoints').value;
+
+  if (!title) { Swal.fire({ icon:'warning', title:'Title required', text:'Please enter a task title.', confirmButtonColor:'#6366f1' }); return; }
+
+  try {
+    const res = await axios.post('/admin/api/tasks', { title, description: desc, points: +points });
+    if (res.data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+      Swal.fire({ icon:'success', title:'Task Created!', text:`"${res.data.title}" is ready to assign.`, confirmButtonColor:'#6366f1', timer:2500, showConfirmButton:false });
+      document.getElementById('taskTitle').value = '';
+      document.getElementById('taskDesc').value  = '';
+    }
+  } catch(e) {
+    Swal.fire({ icon:'error', title:'Error', text:'Could not create task.', confirmButtonColor:'#6366f1' });
+  }
+}
+
+// ── Charts ─────────────────────────────────────────────────────────────
+(async () => {
+  const res = await axios.get('/admin/api/analytics');
+  const d   = res.data;
+
+  // Engagement trend
+  new Chart(document.getElementById('engagementChart'), {
+    type: 'line',
+    data: {
+      labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets: [{
+        label: 'Engagement %',
+        data: d.engagement_trend,
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#6366f1',
+        pointRadius: 4,
+      }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{beginAtZero:false, grid:{color:'rgba(255,255,255,0.05)'}} } }
+  });
+
+  // Risk doughnut
+  new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Safe 🟢', 'Warning 🟡', 'Danger 🔴'],
+      datasets: [{
+        data: [d.risk_dist.safe, d.risk_dist.warning, d.risk_dist.danger],
+        backgroundColor: ['#10b981','#f59e0b','#ef4444'],
+        borderWidth: 0,
+      }]
+    },
+    options: { responsive:true, cutout:'65%', plugins:{legend:{position:'bottom', labels:{color:'#cbd5e1', padding:16}}} }
+  });
+
+  // Map
+  const map = L.map('ambassadorMap', { zoomControl:false }).setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution:'©OpenStreetMap ©CARTO' }).addTo(map);
+
+  d.map_data.forEach(a => {
+    const color = a.risk >= 70 ? '#ef4444' : a.risk >= 40 ? '#f59e0b' : '#10b981';
+    const marker = L.circleMarker([a.lat, a.lng], { radius:7, fillColor:color, color:'#fff', weight:1.5, fillOpacity:0.9 }).addTo(map);
+    marker.bindPopup(`<b>${a.name}</b><br>${a.college}<br>Points: ${a.points} | Risk: ${a.risk}`);
+  });
+})();
+</script>
+{% endblock %}

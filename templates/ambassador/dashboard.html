@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard — CampusConnect{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Hey, {{ amb.name.split()[0] }}! 👋</h1>
+    <p class="page-sub">{{ amb.college }} · Member since {{ amb.joined_at.strftime('%B %Y') }}</p>
+  </div>
+  {% if amb.intervention_note %}
+  <div class="intervention-banner">
+    <i class="bi bi-megaphone-fill"></i>
+    <span>{{ amb.intervention_note[:80] }}…</span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(99,102,241,0.12);color:#6366f1">
+      <i class="bi bi-star-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num" id="myPoints">{{ amb.points }}</span>
+      <span class="kpi-label">My Points</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">
+      <i class="bi bi-trophy-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num">#{{ amb.rank }}</span>
+      <span class="kpi-label">My Rank</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(16,185,129,0.12);color:#10b981">
+      <i class="bi bi-clipboard-check-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num">{{ (amb.completion_rate * 100)|int }}%</span>
+      <span class="kpi-label">Completion Rate</span>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon" style="background:rgba(239,68,68,0.12);color:#{{ 'ef4444' if amb.risk_score >= 70 else 'f59e0b' if amb.risk_score >= 40 else '10b981' }}">
+      <i class="bi bi-shield-fill"></i>
+    </div>
+    <div class="kpi-info">
+      <span class="kpi-num">{{ amb.risk_badge() }}</span>
+      <span class="kpi-label">Risk Status</span>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+
+  <!-- My Tasks -->
+  <div class="card-cc col-span-2">
+    <div class="card-header-cc">
+      <h3><i class="bi bi-list-task me-2"></i>My Tasks</h3>
+    </div>
+
+    {% if assignments %}
+    <div class="tasks-list">
+      {% for ta in assignments %}
+      <div class="task-card-row">
+        <div class="task-status-indicator {{ ta.status }}"></div>
+        <div class="task-main-info">
+          <span class="task-title-main">{{ ta.task.title }}</span>
+          <span class="task-desc-short">{{ ta.task.description[:80] if ta.task.description else '' }}…</span>
+          <div class="task-meta-row">
+            <span class="pts-chip">+{{ ta.task.points }} pts</span>
+            {% if ta.auto_assigned %}<span class="auto-chip">🤖 Auto-assigned</span>{% endif %}
+            <span class="status-chip status-{{ ta.status }}">{{ ta.status.title() }}</span>
+          </div>
+        </div>
+        {% if ta.status == 'pending' %}
+        <a href="{{ url_for('ambassador.task_detail', assignment_id=ta.id) }}" class="btn-cc-primary btn-sm-cc">
+          <i class="bi bi-upload"></i> Submit
+        </a>
+        {% elif ta.status == 'submitted' %}
+        <span class="review-badge">⏳ In Review</span>
+        {% elif ta.status == 'verified' %}
+        <span class="verified-badge">✅ Done</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox" style="font-size:2rem"></i>
+      <p>No tasks assigned yet. Check back soon!</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Leaderboard + Growth -->
+  <div>
+    <!-- Leaderboard -->
+    <div class="card-cc mb-4">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>Leaderboard</h3>
+      </div>
+      {% for a in leaderboard %}
+      <div class="lb-row {% if a.id == amb.id %}lb-me{% endif %}">
+        <span class="lb-rank {% if loop.index <= 3 %}top-{{ loop.index }}{% endif %}">#{{ loop.index }}</span>
+        <div class="lb-avatar">{{ a.name[0] }}</div>
+        <div class="lb-info">
+          <span class="lb-name">{{ a.name }}{% if a.id == amb.id %} (You){% endif %}</span>
+          <span class="lb-college">{{ a.college }}</span>
+        </div>
+        <span class="lb-pts">{{ a.points }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Growth Panel -->
+    <div class="card-cc">
+      <div class="card-header-cc">
+        <h3><i class="bi bi-graph-up-arrow me-2" style="color:#10b981"></i>My Growth</h3>
+      </div>
+
+      <div class="portfolio-section p-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="why-title">PORTFOLIO SCORE</span>
+          <span class="total-score">{{ amb.portfolio_score }}/100</span>
+        </div>
+        <div class="portfolio-bar-wrap">
+          <div class="portfolio-bar" style="width:{{ amb.portfolio_score }}%"></div>
+        </div>
+      </div>
+
+      <div class="skills-section p-3">
+        <p class="why-title">MY SKILLS</p>
+        <div class="skills-wrap">
+          {% for s in skills %}
+          <span class="skill-chip">{{ s }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="growth-tips p-3">
+        <p class="why-title">💡 RECRUITER TIPS</p>
+        {% for tip in tips %}
+        <div class="tip-row"><i class="bi bi-arrow-right-circle-fill" style="color:#6366f1"></i> {{ tip }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
