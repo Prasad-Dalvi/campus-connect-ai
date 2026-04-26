@@ -12,14 +12,15 @@
 
 ## ⚡ JUDGE QUICK TEST (Under 3 Minutes)
 
-🔗 **Live Demo:** *(https://campusconnectai.pythonanywhere.com/login)*
+🔗 **Live Demo:** *(https://campusconnectai.pythonanywhere.com/login)*  
+
 🎬 Video Link https://drive.google.com/file/d/1yeTYt-Y0HKKmn77reFnzW81_trDLlUtH/view?usp=drivesdk
 
 **Credentials:**
 
 ```
-Admin: admin@demo.com / admin123
-Ambassador: bob@demo.com / bob123
+Admin: admin / admin123
+Ambassador: bob / bob123
 ```
 ## 🚀 Local Setup
 
