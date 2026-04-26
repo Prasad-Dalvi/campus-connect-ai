@@ -19,7 +19,7 @@
 
 ```
 Admin: admin@demo.com / admin123
-Ambassador: bob@demo.com / ambassador123
+Ambassador: bob@demo.com / bob123
 ```
 ## 🚀 Local Setup
 
