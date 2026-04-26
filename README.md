@@ -10,7 +10,7 @@
 
 ---
 
-## ⚡ JUDGE QUICK TEST (Under 2 Minutes)
+## ⚡ JUDGE QUICK TEST (Under 3 Minutes)
 
 🔗 **Live Demo:** *(https://campusconnectai.pythonanywhere.com/login)*
 🎬 Video Link https://drive.google.com/file/d/1yeTYt-Y0HKKmn77reFnzW81_trDLlUtH/view?usp=drivesdk
